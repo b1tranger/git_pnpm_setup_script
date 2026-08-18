@@ -7,7 +7,7 @@ Welcome to the **Environment Setup** project! This repository contains automated
 ## 📁 Directory Layout
 
 ```text
-git_npnp_setup_script/
+git_pnpm_setup_script/
 ├── README.md                   # Overview, usage, and step-by-step guide (this file)
 ├── setup_environment.bat       # Double-clickable Windows Batch launcher for Setup
 ├── uninstall_environment.bat   # Double-clickable Windows Batch launcher for Uninstallation
@@ -18,7 +18,9 @@ git_npnp_setup_script/
     ├── uninstall_installer.ps1 # Core uninstallation engine (PowerShell)
     ├── download_deps.ps1       # Dependency manager script for localized binaries
     ├── pnpm_guide.md           # User guide & cheatsheet for PNPM
-    ├── chat_archive.md         # Subproject development chat history
+    ├── prompts/                # User-AI prompt and chat archives
+    │   ├── 01_initial_setup_chat.md
+    │   └── 02_pnpm_not_found_fix_chat.md
     └── deps/                   # Localized offline installers folder
         ├── Git-installer.exe   # Standalone Git 64-bit installer (~69.5 MB)
         ├── node-installer.msi  # Standalone Node.js LTS 64-bit installer (~30.9 MB)
@@ -86,7 +88,7 @@ Setup completed! Refer to 'files/pnpm_guide.md' for usage instructions.
 
 ### Step 4: Learn & Use PNPM
 For full instructions on using `pnpm` in your projects (commands, `.pnpm` virtual store explanation, monorepos, and `npm` vs `pnpm` cheatsheet), open:
-📄 **[files/pnpm_guide.md](file:///c:/Users/gsmur/OneDrive/Documents/GitHub/git_npnp_setup_script/files/pnpm_guide.md)**
+📄 **[files/pnpm_guide.md](file:///c:/Users/gsmur/Documents/GitHub/[personal]/git_pnpm_setup_script/files/pnpm_guide.md)**
 
 ---
 

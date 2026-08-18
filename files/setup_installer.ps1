@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Continue'
 $scriptDir = $PSScriptRoot
 $depsDir = Join-Path $scriptDir 'deps'
 
-if (-not (Test-Path $depsDir)) {
+if (-not (Test-Path -LiteralPath $depsDir)) {
     New-Item -ItemType Directory -Path $depsDir -Force | Out-Null
 }
 
@@ -54,8 +54,8 @@ if ($useOnline) {
         Write-Host "Downloading pnpm binary..."
         $zipFile = Join-Path $depsDir "pnpm.zip"
         & curl.exe -sSL -o $zipFile "https://github.com/pnpm/pnpm/releases/download/v11.22.0/pnpm-win32-x64.zip"
-        Expand-Archive -Path $zipFile -DestinationPath $depsDir -Force
-        Remove-Item $zipFile -Force -ErrorAction SilentlyContinue
+        Expand-Archive -LiteralPath $zipFile -DestinationPath $depsDir -Force
+        Remove-Item -LiteralPath $zipFile -Force -ErrorAction SilentlyContinue
         
         Write-Host "Latest installers successfully downloaded!" -ForegroundColor Green
     } catch {
@@ -65,7 +65,7 @@ if ($useOnline) {
 
 # Update PATH helper function
 function Add-ToPath($targetPath) {
-    if (-not (Test-Path $targetPath)) { return }
+    if (-not (Test-Path -LiteralPath $targetPath)) { return }
     $currentProcessPath = $env:Path
     if ($currentProcessPath -notlike "*$targetPath*") {
         $env:Path = "$targetPath;$env:Path"
@@ -80,7 +80,7 @@ function Add-ToPath($targetPath) {
 # 2. Setup Git
 Write-Host "`n[2/5] Checking Git installation..." -ForegroundColor Yellow
 $gitCmd = Get-Command git -ErrorAction SilentlyContinue
-if (-not $gitCmd -and (Test-Path "C:\Program Files\Git\cmd\git.exe")) {
+if (-not $gitCmd -and (Test-Path -LiteralPath "C:\Program Files\Git\cmd\git.exe")) {
     Add-ToPath "C:\Program Files\Git\cmd"
     $gitCmd = Get-Command git -ErrorAction SilentlyContinue
 }
@@ -90,7 +90,7 @@ if ($gitCmd) {
     Write-Host "-> Git is already installed: $gitVer" -ForegroundColor Green
 } else {
     $gitInstaller = Join-Path $depsDir "Git-installer.exe"
-    if (Test-Path $gitInstaller) {
+    if (Test-Path -LiteralPath $gitInstaller) {
         Write-Host "Installing Git from localized installer..." -ForegroundColor Cyan
         Start-Process -FilePath $gitInstaller -ArgumentList "/VERYSILENT /NORESTART /NOCANCEL /SP-" -Wait
         Add-ToPath "C:\Program Files\Git\cmd"
@@ -103,7 +103,7 @@ if ($gitCmd) {
 # 3. Setup Node.js & npm
 Write-Host "`n[3/5] Checking Node.js installation..." -ForegroundColor Yellow
 $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-if (-not $nodeCmd -and (Test-Path "C:\Program Files\nodejs\node.exe")) {
+if (-not $nodeCmd -and (Test-Path -LiteralPath "C:\Program Files\nodejs\node.exe")) {
     Add-ToPath "C:\Program Files\nodejs"
     $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
 }
@@ -114,7 +114,7 @@ if ($nodeCmd) {
     Write-Host "-> Node.js is already installed: $nodeVer (npm $npmVer)" -ForegroundColor Green
 } else {
     $nodeMsi = Join-Path $depsDir "node-installer.msi"
-    if (Test-Path $nodeMsi) {
+    if (Test-Path -LiteralPath $nodeMsi) {
         Write-Host "Installing Node.js LTS from localized installer..." -ForegroundColor Cyan
         Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$nodeMsi`" /qb /norestart" -Wait
         Add-ToPath "C:\Program Files\nodejs"
@@ -128,26 +128,41 @@ if ($nodeCmd) {
 Write-Host "`n[4/5] Setting up pnpm..." -ForegroundColor Yellow
 
 $pnpmTargetDir = Join-Path $env:LocalAppData "pnpm"
-if (-not (Test-Path $pnpmTargetDir)) {
+if (-not (Test-Path -LiteralPath $pnpmTargetDir)) {
     New-Item -ItemType Directory -Path $pnpmTargetDir -Force | Out-Null
 }
 
 $localPnpmExe = Join-Path $pnpmTargetDir "pnpm.exe"
 $depPnpmExe = Join-Path $depsDir "pnpm.exe"
+$depPnpmDist = Join-Path $depsDir "dist"
 
-if (Test-Path $depPnpmExe) {
-    Copy-Item -Path $depPnpmExe -Destination $localPnpmExe -Force
+if (Test-Path -LiteralPath $depPnpmExe) {
+    Copy-Item -LiteralPath $depPnpmExe -Destination $localPnpmExe -Force
+}
+if (Test-Path -LiteralPath $depPnpmDist) {
+    Copy-Item -LiteralPath $depPnpmDist -Destination $pnpmTargetDir -Recurse -Force
 }
 
 Add-ToPath $pnpmTargetDir
+
+# Set PNPM_HOME environment variable
+$env:PNPM_HOME = $pnpmTargetDir
+$userPnpmHome = [Environment]::GetEnvironmentVariable("PNPM_HOME", "User")
+if ($userPnpmHome -ne $pnpmTargetDir) {
+    [Environment]::SetEnvironmentVariable("PNPM_HOME", $pnpmTargetDir, "User")
+    Write-Host "Configured PNPM_HOME to '$pnpmTargetDir'." -ForegroundColor Cyan
+}
 
 $pnpmCmd = Get-Command pnpm -ErrorAction SilentlyContinue
 if ($pnpmCmd) {
     $pnpmVer = & pnpm -v
     Write-Host "-> pnpm is set up and ready: v$pnpmVer" -ForegroundColor Green
-} elseif (Test-Path $localPnpmExe) {
+} elseif (Test-Path -LiteralPath $localPnpmExe) {
     Write-Host "Notice: Executing pnpm binary directly from $localPnpmExe" -ForegroundColor Cyan
-    & "$localPnpmExe" --version
+    $pnpmVer = & "$localPnpmExe" -v
+    Write-Host "-> pnpm is set up and ready: v$pnpmVer" -ForegroundColor Green
+} else {
+    Write-Host "Error: pnpm binary not found in $depPnpmExe or $localPnpmExe" -ForegroundColor Red
 }
 
 # 5. Verification Summary
@@ -170,6 +185,16 @@ Write-Host "npm:  " -NoNewline
 if ($npmInstalled) { Write-Host ("v" + (& npm -v)) -ForegroundColor Green } else { Write-Host "Not found" -ForegroundColor Red }
 
 Write-Host "pnpm: " -NoNewline
-if ($pnpmInstalled) { Write-Host ("v" + (& pnpm -v)) -ForegroundColor Green } else { Write-Host "Not found" -ForegroundColor Red }
+if ($pnpmInstalled) {
+    $pnpmVerOutput = & pnpm -v 2>$null
+    if (-not $pnpmVerOutput -and (Test-Path -LiteralPath $localPnpmExe)) {
+        $pnpmVerOutput = & "$localPnpmExe" -v 2>$null
+    }
+    Write-Host ("v" + $pnpmVerOutput) -ForegroundColor Green
+} elseif (Test-Path -LiteralPath $localPnpmExe) {
+    Write-Host ("v" + (& "$localPnpmExe" -v)) -ForegroundColor Green
+} else {
+    Write-Host "Not found" -ForegroundColor Red
+}
 
-Write-Host "`nSetup completed! Refer to 'pnpm_guide.md' for usage instructions." -ForegroundColor Green
+Write-Host "`nSetup completed! Refer to 'files/pnpm_guide.md' for usage instructions." -ForegroundColor Green

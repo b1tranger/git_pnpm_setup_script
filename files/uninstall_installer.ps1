@@ -45,9 +45,9 @@ function Remove-FromPath($targetPath) {
 # 1. Uninstall pnpm
 Write-Host "`n[1/4] Uninstalling pnpm..." -ForegroundColor Yellow
 $pnpmTargetDir = Join-Path $env:LocalAppData "pnpm"
-if (Test-Path $pnpmTargetDir) {
+if (Test-Path -LiteralPath $pnpmTargetDir) {
     try {
-        Remove-Item -Path $pnpmTargetDir -Recurse -Force -ErrorAction Stop
+        Remove-Item -LiteralPath $pnpmTargetDir -Recurse -Force -ErrorAction Stop
         Write-Host "Removed pnpm directory: $pnpmTargetDir" -ForegroundColor Green
     } catch {
         Write-Host "Warning: Could not fully delete $pnpmTargetDir. ($($_))" -ForegroundColor DarkYellow
@@ -57,12 +57,16 @@ if (Test-Path $pnpmTargetDir) {
 }
 Remove-FromPath $pnpmTargetDir
 
+# Clean PNPM_HOME environment variable
+$env:PNPM_HOME = $null
+[Environment]::SetEnvironmentVariable("PNPM_HOME", $null, "User")
+
 # 2. Uninstall Node.js
 Write-Host "`n[2/4] Uninstalling Node.js..." -ForegroundColor Yellow
 $nodeMsi = Join-Path $depsDir "node-installer.msi"
 $nodeUninstalled = $false
 
-if (Test-Path $nodeMsi) {
+if (Test-Path -LiteralPath $nodeMsi) {
     Write-Host "Running silent uninstallation for Node.js..." -ForegroundColor Cyan
     Start-Process -FilePath "msiexec.exe" -ArgumentList "/x `"$nodeMsi`" /qb /norestart" -Wait
     $nodeUninstalled = $true
@@ -103,7 +107,7 @@ Write-Host "`n[3/4] Uninstalling Git..." -ForegroundColor Yellow
 $gitUninstaller = "C:\Program Files\Git\unins000.exe"
 $gitUninstalled = $false
 
-if (Test-Path $gitUninstaller) {
+if (Test-Path -LiteralPath $gitUninstaller) {
     Write-Host "Running silent uninstallation for Git..." -ForegroundColor Cyan
     Start-Process -FilePath $gitUninstaller -ArgumentList "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES" -Wait
     $gitUninstalled = $true
@@ -117,7 +121,7 @@ if (Test-Path $gitUninstaller) {
     }
     if ($gitRegKey -and $gitRegKey.UninstallString) {
         $unString = $gitRegKey.UninstallString.Replace('"','')
-        if (Test-Path $unString) {
+        if (Test-Path -LiteralPath $unString) {
             Start-Process -FilePath $unString -ArgumentList "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES" -Wait
             $gitUninstalled = $true
         }
