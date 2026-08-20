@@ -12,6 +12,7 @@ Welcome to the **PNPM Guide** for projects in this repository. This document exp
 5. [Working with Projects](#-working-with-projects)
 6. [Monorepo & Workspaces](#-monorepo--workspaces)
 7. [Best Practices](#-best-practices)
+8. [Troubleshooting & Build Script Approvals (pnpm v10+)](#-troubleshooting--build-script-approvals-pnpm-v10)
 
 ---
 
@@ -154,3 +155,45 @@ pnpm --filter "./packages/*" add dayjs
    ```bash
    pnpm store prune
    ```
+
+---
+
+## ⚠️ Troubleshooting & Build Script Approvals (pnpm v10+)
+
+### `[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: <package>`
+
+#### Why this happens:
+In **pnpm v10+**, packages with lifecycle scripts (like `install` or `postinstall` in packages such as `esbuild` or `leveldown`) are blocked by default for security to prevent untrusted packages from running arbitrary code during installation.
+
+#### Solutions:
+
+**Option 1: Interactive Approval (Recommended)**
+Run in the project directory:
+```bash
+pnpm approve-builds
+```
+Select the required dependencies using the Spacebar and press Enter. This automatically updates `package.json` with `onlyBuiltDependencies`.
+
+**Option 2: Add to `package.json` manually**
+Specify the trusted packages under the `"pnpm"` field:
+```json
+{
+  "name": "my-app",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "leveldown"
+    ]
+  }
+}
+```
+Then re-run:
+```bash
+pnpm install
+```
+
+**Option 3: Allow all build scripts via `.npmrc`**
+If you prefer legacy unconstrained behavior for your project, add the following to your project's `.npmrc`:
+```ini
+ignored-builds=
+```

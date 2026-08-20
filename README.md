@@ -20,7 +20,8 @@ git_pnpm_setup_script/
     ├── pnpm_guide.md           # User guide & cheatsheet for PNPM
     ├── prompts/                # User-AI prompt and chat archives
     │   ├── 01_initial_setup_chat.md
-    │   └── 02_pnpm_not_found_fix_chat.md
+    │   ├── 02_pnpm_not_found_fix_chat.md
+    │   └── 03_pnpm_ignored_builds_troubleshooting_chat.md
     └── deps/                   # Localized offline installers folder
         ├── Git-installer.exe   # Standalone Git 64-bit installer (~69.5 MB)
         ├── node-installer.msi  # Standalone Node.js LTS 64-bit installer (~30.9 MB)
